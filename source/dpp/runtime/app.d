@@ -54,8 +54,24 @@ void preprocess(File)(in from!"dpp.runtime.options".Options options,
         // write preamble code
         outputFile.writeln(preamble);
 
+        import std.file: exists, isFile;
+        auto cacheFileName = outputFileName ~ ".cache-dpp";
         // write translated D definitions
-        outputFile.writeln(translationText!File(options, inputFileName));
+        if(!options.cacheCppFiles){
+            if(cacheFileName.exists && cacheFileName.isFile){
+                remove(cacheFileName);
+            }
+            outputFile.writeln(translationText!File(options, inputFileName));
+        }else{
+            import std.file: readText, write;
+            if(cacheFileName.exists && cacheFileName.isFile){
+                outputFile.writeln(readText(cacheFileName));
+            }else{
+                auto translated = translationText!File(options, inputFileName);
+                write(cacheFileName, translated);
+                outputFile.writeln(translated);
+            }
+        }
 
         // write original D code
         writeDlangLines(inputFileName, outputFile);
